@@ -581,8 +581,8 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1877258637}
   - {fileID: 366570509}
+  - {fileID: 1877258637}
   m_Father: {fileID: 1549366189}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -781,8 +781,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46571f1ee7b04242a5cb310a0eedd860, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inventorySize: {x: 0, y: 0}
-  chestSize: {x: 0, y: 0}
   view: {fileID: 200552243}
 --- !u!4 &1398195594
 Transform:

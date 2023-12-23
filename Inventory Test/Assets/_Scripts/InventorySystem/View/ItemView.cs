@@ -29,7 +29,6 @@ namespace _Scripts.InventorySystem.View
             ActualCell = cell;
             PutInPlace();
         }
-        
         public void PutInPlace() => rectTransform.anchoredPosition = ActualCell.RectTransform.anchoredPosition;
         public void ChangeContainer(Transform container) => transform.SetParent(container, false);
 
@@ -38,6 +37,7 @@ namespace _Scripts.InventorySystem.View
         // DRAG METHOTDS
         public void OnBeginDrag(PointerEventData eventData)
         {
+            rectTransform.SetAsLastSibling();
             itemImage.raycastTarget = false;
         }
         
@@ -45,8 +45,6 @@ namespace _Scripts.InventorySystem.View
         {
             //rectTransform.anchoredPosition += eventData.delta;
             rectTransform.position = Input.mousePosition;
-            
-            //if(1 << eventData.pointerCurrentRaycast.gameObject.layer != inventoryLayer) itemImage.color = Color.red;
         }
 
         public void OnEndDrag(PointerEventData eventData)
@@ -55,7 +53,11 @@ namespace _Scripts.InventorySystem.View
 
             if(!newCell) PutInPlace();
             else if(1 << newCell.gameObject.layer == inventoryLayer) newCell.DropItem(this);
-            else if(1 << newCell.gameObject.layer == assortmentLayer) ActualCell.RemoveItem(this);
+            else if (1 << newCell.gameObject.layer == assortmentLayer)
+            {
+                if(1 << ActualCell.gameObject.layer == assortmentLayer) PutInPlace();
+                else ActualCell.RemoveItem(this);
+            }
             
             itemImage.raycastTarget = true;
         }

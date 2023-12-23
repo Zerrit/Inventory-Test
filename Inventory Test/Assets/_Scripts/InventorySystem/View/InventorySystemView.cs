@@ -1,4 +1,5 @@
-﻿using _Scripts.InventorySystem.Factory;
+﻿using System.Collections.Generic;
+using _Scripts.InventorySystem.Factory;
 using _Scripts.InventorySystem.Model;
 using UnityEngine;
 
@@ -16,11 +17,15 @@ namespace _Scripts.InventorySystem.View
         
         private GridCell[,] _inventoryGrid;
         private GridCell[,] _assortmentGrid;
+
+        private List<IItemView> _assortmentItems;
         
         private int _freeAssortmentYIndex;
         private InventorySystemController _controller;
         private IItemFactory _factory;
 
+        private const string inventoryLayer = "Inventory Cell";
+        private const string assortmentLayer = "Assortment Cell";
 
 
         public void Initialize(InventorySystemController controller, IItemFactory factory)
@@ -32,7 +37,8 @@ namespace _Scripts.InventorySystem.View
             CreateInventoryGrid(inventoryCellsContainer, new Vector2Int(10,10));
             CreateAssortmentGrid(assortmentCellsContainer, new Vector2Int(5, 10));
             Canvas.ForceUpdateCanvases();
-            
+
+            _assortmentItems = new List<IItemView>();
             FillRightGrid(4); // ЗАПОЛНЕНИЕ ПРАВОЙ ПАНЕЛИ
             
             Debug.Log("Представление инициализировано");
@@ -42,10 +48,14 @@ namespace _Scripts.InventorySystem.View
         // ВОЗВРАТ В ПРАВУЮ ПАНЕЛЬ  
         private void ReturnToAssortment(IItemView item) 
         {
-            if (!HasFreeSpace(item)) return;
-            
+            if (!HasFreeSpace(item))
+            {
+                item.PutInPlace();
+                return;
+            }
             _controller.TryRemoveItem(item.Data, item.ActualCell.CellPosition);
             item.ChangeContainer(assortmentItemsContainer);
+            _assortmentItems.Add(item);
             AddItemToAssortment(item);
         }
         
@@ -55,6 +65,7 @@ namespace _Scripts.InventorySystem.View
             if(!_controller.CheckCells(item.Data, targetCell.CellPosition)) item.PutInPlace();
             else 
             {
+                TryRemoveAssortmentItem(item);
                 _controller.TryRemoveItem(item.Data, item.ActualCell.CellPosition);
                 _controller.TryAddItem(item.Data, targetCell.CellPosition);
                 item.ChangeContainer(inventoryItemsContainer);
@@ -80,7 +91,7 @@ namespace _Scripts.InventorySystem.View
                 {
                     _inventoryGrid[j, i] = Instantiate(cellPrefab, container);
                     _inventoryGrid[j, i].Initialize(new Vector2Int(j,i));
-                    _inventoryGrid[j, i].gameObject.layer = LayerMask.NameToLayer("Inventory Cell");
+                    _inventoryGrid[j, i].gameObject.layer = LayerMask.NameToLayer(inventoryLayer);
                     _inventoryGrid[j, i].OnRemoveItem += ReturnToAssortment;
                     _inventoryGrid[j, i].OnDropItem += PlaceItem;
                 }
@@ -99,7 +110,7 @@ namespace _Scripts.InventorySystem.View
                 {
                     _assortmentGrid[j, i] = Instantiate(cellPrefab, container);
                     _assortmentGrid[j, i].Initialize(new Vector2Int(j,i));
-                    _assortmentGrid[j, i].gameObject.layer = LayerMask.NameToLayer("Assortment Cell");
+                    _assortmentGrid[j, i].gameObject.layer = LayerMask.NameToLayer(assortmentLayer);
                 }
             }
         }
@@ -109,7 +120,10 @@ namespace _Scripts.InventorySystem.View
             {
                 ItemView view = _factory.GetRandomItemView(assortmentItemsContainer);
                 if (HasFreeSpace(view))
+                {
+                    _assortmentItems.Add(view);
                     AddItemToAssortment(view);
+                }
                 else
                 {
                     Destroy(view.gameObject);
@@ -117,11 +131,29 @@ namespace _Scripts.InventorySystem.View
                 }
             }
         }
-        private bool HasFreeSpace(IItemView item) => (_freeAssortmentYIndex + item.Data.Size.y <= 10);
+        private bool HasFreeSpace(IItemView item)
+        {
+            if (_freeAssortmentYIndex + item.Data.Size.y <= 10) return true;
+            
+            RecombineAssortment();
+            return false;
+        } 
         private void AddItemToAssortment(IItemView item)
         {
             item.ChangeCell(_assortmentGrid[0, _freeAssortmentYIndex]);
             _freeAssortmentYIndex += (int) item.Data.Size.y;
+        }
+        private void RecombineAssortment()
+        {
+            _freeAssortmentYIndex = 0;
+            foreach (IItemView view in _assortmentItems)
+            {
+                AddItemToAssortment(view);    
+            }
+        }
+        private void TryRemoveAssortmentItem(IItemView item)
+        {
+            if (_assortmentItems.Contains(item)) _assortmentItems.Remove(item);
         }
     }
 }
